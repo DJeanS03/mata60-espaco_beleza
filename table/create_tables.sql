@@ -94,10 +94,8 @@ RETURNS VOID AS $$
 DECLARE
     command TEXT;
 BEGIN
-    -- Montar o comando do sistema para pg_dump
     command := 'pg_dump -Fc -U postgres -d ' || database_name || ' -f ' || backup_path || database_name || '.backup';
 
-    -- Executar o comando
     PERFORM dblink_exec('dbname=' || current_database(), command);
 END;
 $$ LANGUAGE plpgsql;
@@ -108,15 +106,33 @@ RETURNS VOID AS $$
 DECLARE
     command TEXT;
 BEGIN
-    -- Desconectar todos os usuários do banco de dados para permitir restauração
     PERFORM pg_terminate_backend(pid)
     FROM pg_stat_activity
     WHERE datname = database_name AND pid <> pg_backend_pid();
 
-    -- Montar o comando do sistema para pg_restore
     command := 'pg_restore -U postgres -d ' || database_name || ' -c -v ' || backup_path || database_name || '.backup';
 
     -- Executar o comando
     PERFORM dblink_exec('dbname=' || current_database(), command);
 END;
 $$ LANGUAGE plpgsql;
+
+# Agendar backup diário para tabelas críticas
+0 20 * * * psql -U postgres -d nome_do_banco -c "SELECT backup_database('/path/to/backup/', 'tbl_agendamento');"
+0 20 * * * psql -U postgres -d nome_do_banco -c "SELECT backup_database('/path/to/backup/', 'tbl_cliente');"
+0 20 * * * psql -U postgres -d nome_do_banco -c "SELECT backup_database('/path/to/backup/', 'tbl_profissional');"
+0 20 * * * psql -U postgres -d nome_do_banco -c "SELECT backup_database('/path/to/backup/', 'tbl_servico');"
+0 20 * * * psql -U postgres -d nome_do_banco -c "SELECT backup_database('/path/to/backup/', 'tbl_pagamento');"
+
+# Agendar backup mensal para tabelas não críticas
+0 20 1 * * psql -U postgres -d nome_do_banco -c "SELECT backup_database('/path/to/backup/', 'tbl_logs');"
+0 20 1 * * psql -U postgres -d nome_do_banco -c "SELECT backup_database('/path/to/backup/', 'tbl_feedback');"
+
+# Agendar backup anual completo
+0 0 1 1 * psql -U postgres -d nome_do_banco -c "SELECT backup_database('/path/to/backup/', 'tbl_agendamento');"
+0 0 1 1 * psql -U postgres -d nome_do_banco -c "SELECT backup_database('/path/to/backup/', 'tbl_cliente');"
+0 0 1 1 * psql -U postgres -d nome_do_banco -c "SELECT backup_database('/path/to/backup/', 'tbl_profissional');"
+0 0 1 1 * psql -U postgres -d nome_do_banco -c "SELECT backup_database('/path/to/backup/', 'tbl_servico');"
+0 0 1 1 * psql -U postgres -d nome_do_banco -c "SELECT backup_database('/path/to/backup/', 'tbl_pagamento');"
+0 0 1 1 * psql -U postgres -d nome_do_banco -c "SELECT backup_database('/path/to/backup/', 'tbl_logs');"
+0 0 1 1 * psql -U postgres -d nome_do_banco -c "SELECT backup_database('/path/to/backup/', 'tbl_feedback');"
