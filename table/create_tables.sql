@@ -120,8 +120,3 @@ BEGIN
     PERFORM dblink_exec('dbname=' || current_database(), command);
 END;
 $$ LANGUAGE plpgsql;
-
-
-
-
-    
