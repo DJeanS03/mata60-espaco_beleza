@@ -31,6 +31,7 @@ CREATE TABLE agendamento (
     id_agendamento INT,
     status_agendamento VARCHAR(50),
     data_agendamento DATE,
+    hora_agendamento DATE,
     id_servico INT,
     id_profissional INT,
     id_cliente INT

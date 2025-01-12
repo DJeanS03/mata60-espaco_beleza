@@ -590,13 +590,13 @@ VALUES
     (151, 'Agendado', '2025-06-25', '16:00:00', 152, 88, 158),
     (152, 'Cancelado', '2025-06-26', '17:30:00', 153, 89, 159),
     (153, 'Concluído', '2025-06-27', '18:30:00', 154, 90, 160),
-    (154, 'Agendado', '2025-06-28', '10:00:00', 155, 91, 161),
-    (155, 'Cancelado', '2025-06-29', '11:30:00', 156, 92, 162),
-    (156, 'Concluído', '2025-06-30', '13:00:00', 157, 93, 163),
-    (157, 'Agendado', '2025-07-01', '14:30:00', 158, 94, 164),
-    (158, 'Concluído', '2025-07-02', '16:00:00', 159, 95, 165),
-    (159, 'Agendado', '2025-07-03', '17:30:00', 160, 96, 166),
-    (160, 'Cancelado', '2025-07-04', '19:00:00', 161, 97, 167);
+    (154, 'Agendado', '2025-06-28', '10:00:00', 155, 91, 149),
+    (155, 'Cancelado', '2025-06-29', '11:30:00', 156, 92, 112),
+    (156, 'Concluído', '2025-06-30', '13:00:00', 157, 93, 113),
+    (157, 'Agendado', '2025-07-01', '14:30:00', 158, 94, 116),
+    (158, 'Concluído', '2025-07-02', '16:00:00', 159, 95, 115),
+    (159, 'Agendado', '2025-07-03', '17:30:00', 160, 96, 146),
+    (160, 'Cancelado', '2025-07-04', '19:00:00', 161, 97, 137);
 
 INSERT INTO pagamento (id_pagamento, id_agendamento, id_cliente, valor_pago, data_pagamento, forma_pagamento, parcelas_cartao)
 VALUES
@@ -754,7 +754,7 @@ VALUES
     (22, 'Papel Toalha', 200, 20),
     (23, 'Escova Rotacional', 10, 1),
     (24, 'Shampoo para Cabelos Cacheados', 50, 5),
-    (25, 'Tônico Capilar', 40, 4);
+    (25, 'Tônico Capilar', 40, 4),
     (26, 'Corte de Tesoura de Precisão', 20, 5),
     (27, 'Gel para Modelagem de Cabelo', 40, 8),
     (28, 'Spray de Cabelo', 30, 5),
