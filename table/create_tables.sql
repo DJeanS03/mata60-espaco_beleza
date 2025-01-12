@@ -88,108 +88,40 @@ CREATE INDEX idx_pagamento_forma ON pagamento(forma_pagamento);
 
 --================================================Backup==========================================================
 
-
--- Criar procedimento armazenado para backup completo
-CREATE PROCEDURE sp_BackupDatabase 
-    @BackupPath nvarchar(260),
-    @DatabaseName nvarchar(128)
-AS
+-- Criar uma função para executar o backup
+CREATE OR REPLACE FUNCTION backup_database(backup_path TEXT, database_name TEXT)
+RETURNS VOID AS $$
+DECLARE
+    command TEXT;
 BEGIN
-    DECLARE @DeviceName nvarchar(260);
-    SET @DeviceName = @BackupPath + @DatabaseName + '.bak';
+    -- Montar o comando do sistema para pg_dump
+    command := 'pg_dump -Fc -U postgres -d ' || database_name || ' -f ' || backup_path || database_name || '.backup';
 
-    -- Criar backup completo da base de dados
-    BACKUP DATABASE @DatabaseName TO DISK = @DeviceName;
-END
+    -- Executar o comando
+    PERFORM dblink_exec('dbname=' || current_database(), command);
+END;
+$$ LANGUAGE plpgsql;
 
--- Criar procedimento armazenado para restauração
-CREATE PROCEDURE sp_RestoreDatabase 
-    @BackupPath nvarchar(260),
-    @DatabaseName nvarchar(128)
-AS
+-- Criar uma função para restaurar um banco de dados
+CREATE OR REPLACE FUNCTION restore_database(backup_path TEXT, database_name TEXT)
+RETURNS VOID AS $$
+DECLARE
+    command TEXT;
 BEGIN
-    DECLARE @DeviceName nvarchar(260);
-    SET @DeviceName = @BackupPath + @DatabaseName + '.bak';
+    -- Desconectar todos os usuários do banco de dados para permitir restauração
+    PERFORM pg_terminate_backend(pid)
+    FROM pg_stat_activity
+    WHERE datname = database_name AND pid <> pg_backend_pid();
 
-    -- Restaurar base de dados do backup
-    RESTORE DATABASE @DatabaseName 
-    FROM DISK = @DeviceName;
-END
+    -- Montar o comando do sistema para pg_restore
+    command := 'pg_restore -U postgres -d ' || database_name || ' -c -v ' || backup_path || database_name || '.backup';
 
--- Criar política de backup com diferentes frequências
-CREATE POLICY sp_BackupPolicy
-FOR DATABASE [SeuNomeDaBase]
-WITH (
-    BACKUP_FREQUENCY = 'DAILY' FOR 
-        ['agendamento', 'pagamento', 'insumos'],
-    BACKUP_FREQUENCY = 'MONTHLY' FOR 
-        ['cliente', 'profissional', 'servico', 'feedback']
-);
+    -- Executar o comando
+    PERFORM dblink_exec('dbname=' || current_database(), command);
+END;
+$$ LANGUAGE plpgsql;
 
--- Configurar tarefas de backup programadas
-EXEC msdb.dbo.sp_add_schedule 
-    @schedule_name='BackupSchedule',
-    @freq_type=4,
-    @freq_interval=1,
-    @active_start_time='08:00';
 
-EXEC msdb.dbo.sp_attach_schedule 
-    @schedule_name='BackupSchedule',
-    @job_name='BackupJob';
 
--- Criar tarefa de backup para bancos diários
-EXEC msdb.dbo.sp_add_jobstep 
-    @job_name='BackupJob',
-    @step_name='DailyBackupStep',
-    @subsystem='TSQL',
-    @command=N'
-BEGIN
-    EXEC sp_BackupDatabase ''C:\Path\To\Backup\Folder\', ''agendamento'';
-    EXEC sp_BackupDatabase ''C:\Path\To\Backup\Folder\', ''pagamento'';  
-    EXEC sp_BackupDatabase ''C:\Path\To\Backup\Folder\', ''insumos'';  
-END
-';
 
--- Criar tarefa de backup para bancos mensais
-EXEC msdb.dbo.sp_add_jobstep 
-    @job_name='BackupJob',
-    @step_name='MonthlyBackupStep',
-    @subsystem='TSQL',
-    @command=N'
-BEGIN
-    EXEC sp_BackupDatabase ''C:\Path\To\Backup\Folder\', ''cliente'';  
-    EXEC sp_BackupDatabase ''C:\Path\To\Backup\Folder\', ''profissional'';  
-    EXEC sp_BackupDatabase ''C:\Path\To\Backup\Folder\', ''servico'';  
-    EXEC sp_BackupDatabase ''C:\Path\To\Backup\Folder\', ''feedback'';  
-END
-';
-
--- Configurar retentativa
-EXEC msdb.dbo.sp_add_retries @job_name='BackupJob', @retries=3;
-
--- Configurar alertas de backup
-EXEC msdb.dbo.sp_add_alert 
-    @name=N'Remote Backup Alert',
-    @message_id=-1,
-    @severity=16,
-    @enabled=true,
-    @delay_between_responses=300,
-    @include_eventid=FALSE,
-    @operators=N'SQLServer:SQLServerOperatorRole',
-    @alert_category_name=N'REMOTEBACKUP',
-    @alert_description=N'Remote backup failed',
-    @alert_message_source=N'DATABASEMail',
-    @email_address=N'databasealerts@yourdomain.com';
-
--- Criar teste de recuperação
-CREATE PROCEDURE sp_TestRecovery
-    @DatabaseName nvarchar(128),
-    @BackupPath nvarchar(260)
-AS
-BEGIN
-    DECLARE @DeviceName nvarchar(260);
-    SET @DeviceName = @BackupPath + @DatabaseName + '.bak';
-
-    -- Executar teste de recuperação
-    EXEC sp_RestoreDatabase @BackupPath, @DatabaseName;
-END
+    
